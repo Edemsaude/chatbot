@@ -18,7 +18,6 @@ const client = new Client({
 
 // Adiciona informação abaixo do nome do chatbot
 client.on('authenticated', () => {
-  client.setStatus("Esse número não recebe ligações");
 });
 
 const sessoes = {};
@@ -48,7 +47,6 @@ client.on('qr', qr => qrcode.generate(qr, { small: true }));
 
 client.on('ready', () => {
   console.log('✅ WhatsApp conectado!');
-  client.setStatus("Esse número não recebe ligações. Obrigado.");
 });
 
 client.initialize();
