@@ -12,27 +12,21 @@ const CONFIG = {
 
 const client = new Client({
   puppeteer: {
-    args: ['--no-sandbox']
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox']
   }
-});
-
-// Adiciona informação abaixo do nome do chatbot
-client.on('authenticated', () => {
 });
 
 const sessoes = {};
 
-// Função para formatar data no fuso de Cuiabá (Node.js)
+// Fuso horário de Cuiabá
 function formatarDataCuiaba() {
   const agora = new Date();
-  
-  // Ajusta para o fuso horário de Cuiabá (-04:00)
-  const offsetLocal = agora.getTimezoneOffset(); // em minutos
-  const offsetCuiaba = 240; // Cuiabá é UTC-4 (240 minutos)
+  const offsetLocal = agora.getTimezoneOffset();
+  const offsetCuiaba = 240;
   const diff = offsetLocal - offsetCuiaba;
   const dataAjustada = new Date(agora.getTime() + diff * 60000);
 
-  // Formata manualmente no padrão DD/MM/YYYY HH:mm:ss
   const dia = String(dataAjustada.getDate()).padStart(2, '0');
   const mes = String(dataAjustada.getMonth() + 1).padStart(2, '0');
   const ano = dataAjustada.getFullYear();
@@ -53,7 +47,7 @@ client.initialize();
 
 async function enviarParaPlanilha(dados) {
   try {
-    dados.data = formatarDataCuiaba(); // Usa o fuso de Cuiabá
+    dados.data = formatarDataCuiaba();
     const response = await axios.post(CONFIG.planilhaUrl, {
       action: 'salvar_dados',
       data: dados
@@ -79,7 +73,6 @@ function gerarProtocolo() {
     month: '2-digit',
     day: '2-digit'
   }).replace(/\//g, '');
-  
   const sequencia = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
   return `${prefixo}-${data}-${sequencia}`;
 }
@@ -98,8 +91,7 @@ client.on('message', async msg => {
       dados: { nomeUsuario },
       ultimaInteracao: Date.now()
     };
-    
-    // Qualquer mensagem inicial aciona o menu
+
     await enviarMensagem(chat, from, 'Olá, sou o DISK DENGUE e estarei iniciando seu atendimento.');
     await enviarMensagem(chat, from, '🚨 Por favor, escolha o número da sua reclamação:\n\n1 - IMÓVEL C/ ASPECTO DE ABANDONO\n2 - TERRENO BALDIO\n3 - LIXO ACUMULADO\n4 - IMÓVEL C/ ACÚMULO DE DEPÓSITOS');
     sessoes[from].etapa = 'aguardando_opcao';
@@ -109,21 +101,22 @@ client.on('message', async msg => {
   sessoes[from].ultimaInteracao = Date.now();
 
   try {
-    if (sessoes[from].etapa === 'aguardando_opcao' && ['1','2','3','4'].includes(msg.body)) {
+    const etapaAtual = sessoes[from].etapa;
+
+    if (etapaAtual === 'aguardando_opcao' && ['1','2','3','4'].includes(msg.body)) {
       const tipos = {
         '1': 'IMÓVEL C/ ASPECTO DE ABANDONO',
-        '2': 'TERRENO BALDIO', 
+        '2': 'TERRENO BALDIO',
         '3': 'LIXO ACUMULADO',
         '4': 'IMÓVEL C/ ACÚMULO DE DEPÓSITOS'
       };
-      
       sessoes[from].dados.tipoReclamacao = tipos[msg.body];
       sessoes[from].etapa = 'aguardando_descricao';
       await enviarMensagem(chat, from, 'Por favor, descreva em poucas palavras o que está acontecendo:');
       return;
     }
 
-    if (sessoes[from].etapa === 'aguardando_descricao') {
+    if (etapaAtual === 'aguardando_descricao') {
       sessoes[from].dados.descricao = msg.body;
       sessoes[from].etapa = 'aguardando_endereco';
       await enviarMensagem(chat, from, 'Obrigado pela descrição. Vamos precisar do endereço completo.');
@@ -131,7 +124,7 @@ client.on('message', async msg => {
       return;
     }
 
-    if (sessoes[from].etapa === 'aguardando_endereco') {
+    if (etapaAtual === 'aguardando_endereco') {
       sessoes[from].dados.endereco = msg.body;
       sessoes[from].etapa = 'aguardando_referencia';
       await enviarMensagem(chat, from, 'Agora, nos informe um ponto de referência próximo:');
@@ -139,14 +132,14 @@ client.on('message', async msg => {
       return;
     }
 
-    if (sessoes[from].etapa === 'aguardando_referencia') {
+    if (etapaAtual === 'aguardando_referencia') {
       sessoes[from].dados.referencia = msg.body;
       sessoes[from].etapa = 'aguardando_bairro';
       await enviarMensagem(chat, from, 'Para finalizar, qual o bairro?');
       return;
     }
 
-    if (sessoes[from].etapa === 'aguardando_bairro') {
+    if (etapaAtual === 'aguardando_bairro') {
       sessoes[from].dados.bairro = msg.body;
       sessoes[from].etapa = 'aguardando_telefone';
       await enviarMensagem(chat, from, 'Caso nossa equipe precise entrar em contato, qual seu telefone?');
@@ -154,16 +147,16 @@ client.on('message', async msg => {
       return;
     }
 
-    if (sessoes[from].etapa === 'aguardando_telefone') {
+    if (etapaAtual === 'aguardando_telefone') {
       if (!msg.body.match(/^\d{10,11}$/)) {
         await enviarMensagem(chat, from, 'Formato inválido. Por favor, digite apenas números com DDD (ex: 21987654321)');
         return;
       }
-      
+
       sessoes[from].dados.telefone = msg.body;
       sessoes[from].dados.protocolo = gerarProtocolo();
       sessoes[from].etapa = 'aguardando_avaliacao';
-      
+
       await enviarMensagem(chat, from, 'Obrigado pelas informações!');
       await enviarMensagem(chat, from, `Seu número de protocolo é: ${sessoes[from].dados.protocolo}`);
       await enviarMensagem(chat, from, 'Sua reclamação será encaminhada para nossa equipe.');
@@ -172,26 +165,17 @@ client.on('message', async msg => {
       return;
     }
 
-    if (sessoes[from].etapa === 'aguardando_avaliacao' && ['1','2','3','4','5'].includes(msg.body)) {
+    if (etapaAtual === 'aguardando_avaliacao' && ['1','2','3','4','5'].includes(msg.body)) {
       sessoes[from].dados.avaliacao = msg.body;
       const salvou = await enviarParaPlanilha(sessoes[from].dados);
-      
+
       if (salvou) {
         await enviarMensagem(chat, from, '✅ Obrigado pelo seu contato! Seu protocolo foi registrado com sucesso.');
       } else {
         await enviarMensagem(chat, from, '⚠️ Obrigado pelo seu contato! Sua reclamação foi recebida, mas houve um problema ao registrar o protocolo.');
       }
-      
-      delete sessoes[from];
-      return;
-    }
 
-    // Se não estiver em nenhuma etapa específica, redireciona para o início
-    if (!['aguardando_opcao', 'aguardando_descricao', 'aguardando_endereco', 'aguardando_referencia', 'aguardando_bairro', 'aguardando_telefone', 'aguardando_avaliacao'].includes(sessoes[from].etapa)) {
-      sessoes[from].etapa = 'inicio';
-      await enviarMensagem(chat, from, 'Olá, sou o DISK DENGUE e estarei iniciando seu atendimento.');
-      await enviarMensagem(chat, from, '🚨 Por favor, escolha o número da sua reclamação:\n\n1 - IMÓVEL C/ ASPECTO DE ABANDONO\n2 - TERRENO BALDIO\n3 - LIXO ACUMULADO\n4 - IMÓVEL C/ ACÚMULO DE DEPÓSITOS');
-      sessoes[from].etapa = 'aguardando_opcao';
+      delete sessoes[from];
       return;
     }
 
@@ -206,11 +190,11 @@ client.on('message', async msg => {
 
 setInterval(() => {
   const agora = Date.now();
-  Object.keys(sessoes).forEach(from => {
+  for (const from in sessoes) {
     if (agora - sessoes[from].ultimaInteracao > CONFIG.tempoResposta) {
       delete sessoes[from];
     }
-  });
+  }
 }, 60000);
 
 console.log('🚀 Iniciando bot Disk Dengue...');
