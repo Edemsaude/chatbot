@@ -1,9 +1,7 @@
-// chatbot.js
 const qrcode = require('qrcode-terminal');
 const { Client } = require('whatsapp-web.js');
 const axios = require('axios');
 
-// Configurações
 const CONFIG = {
   planilhaUrl: 'https://script.google.com/macros/s/AKfycby7U2eeAdTkwKNCMYXLN1CfTqjIX5WceIyjJqJqa_JI8RVb05IQpn623fM-vDIaSoND/exec',
   tempoDigitacao: 1500,
@@ -19,7 +17,6 @@ const client = new Client({
 
 const sessoes = {};
 
-// Fuso horário de Cuiabá
 function formatarDataCuiaba() {
   const agora = new Date();
   const offsetLocal = agora.getTimezoneOffset();
@@ -99,7 +96,6 @@ client.on('message', async msg => {
   }
 
   sessoes[from].ultimaInteracao = Date.now();
-
   try {
     const etapaAtual = sessoes[from].etapa;
 
@@ -118,8 +114,21 @@ client.on('message', async msg => {
 
     if (etapaAtual === 'aguardando_descricao') {
       sessoes[from].dados.descricao = msg.body;
+      sessoes[from].etapa = 'aguardando_foto';
+      await enviarMensagem(chat, from, 'Tem alguma foto que gostaria de nos enviar?');
+      await enviarMensagem(chat, from, '(Se não tiver, apenas envie uma mensagem em branco para continuar)');
+      return;
+    }
+
+    if (etapaAtual === 'aguardando_foto') {
+      if (msg.hasMedia) {
+        const media = await msg.downloadMedia();
+        sessoes[from].dados.foto = media.data;
+      } else {
+        sessoes[from].dados.foto = 'Não enviada';
+      }
       sessoes[from].etapa = 'aguardando_endereco';
-      await enviarMensagem(chat, from, 'Obrigado pela descrição. Vamos precisar do endereço completo.');
+      await enviarMensagem(chat, from, 'Obrigado pela informação. Vamos precisar do endereço completo.');
       await enviarMensagem(chat, from, 'Por favor, digite o nome da rua, avenida ou travessa com o número:');
       return;
     }
