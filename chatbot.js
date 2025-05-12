@@ -3,7 +3,7 @@ const { Client } = require('whatsapp-web.js');
 const axios = require('axios');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycby7U2eeAdTkwKNCMYXLN1CfTqjIX5WceIyjJqJqa_JI8RVb05IQpn623fM-vDIaSoND/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbwVbHUXC1jNCCpFDmzxIgzvbR_BZCdX9fLJC9gF12ov95LjiRYPvNn5-9oDk6MpSwo/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000
 };
