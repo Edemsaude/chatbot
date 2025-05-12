@@ -1,7 +1,7 @@
-// chatbot.js
 const qrcode = require('qrcode-terminal');
 const { Client } = require('whatsapp-web.js');
 const axios = require('axios');
+const qs = require('qs');
 const fs = require('fs');
 const path = require('path');
 
@@ -49,10 +49,16 @@ client.initialize();
 async function enviarParaPlanilha(dados) {
   try {
     dados.data = formatarDataCuiaba();
-    const response = await axios.post(CONFIG.planilhaUrl, {
+
+    const response = await axios.post(CONFIG.planilhaUrl, qs.stringify({
       action: 'salvar_dados',
-      data: dados
+      data: JSON.stringify(dados)
+    }), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
     });
+
     return response.data.success;
   } catch (error) {
     console.error('Erro ao enviar para planilha:', error.message);
