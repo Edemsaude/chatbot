@@ -44,14 +44,47 @@ client.initialize();
 
 async function enviarParaPlanilha(dados) {
   try {
-    dados.data = formatarDataCuiaba();
-    const response = await axios.post(CONFIG.planilhaUrl, {
-      action: 'salvar_dados',
-      data: dados
+    dados.dataCampoGrande = formatarDataCuiaba();
+
+    // Envia os dados da denúncia
+    const response = await axios.post(CONFIG.planilhaUrl, null, {
+      params: {
+        tipoReclamacao: dados.tipoReclamacao,
+        endereco: dados.endereco,
+        referencia: dados.referencia,
+        bairro: dados.bairro,
+        telefone: dados.telefone,
+        descricaoProblema: dados.descricao,
+        protocolo: dados.protocolo,
+        avaliacao: dados.avaliacao,
+        constatacao: '',
+        nomeAgente: '',
+        assinatura: '',
+        dataCampoGrande: dados.dataCampoGrande
+      }
     });
+
+    const linha = response.data.linha;
+
+    // Se tiver foto, envia separadamente
+    if (dados.foto && dados.foto !== 'Não enviada') {
+      const upload = await axios.post(CONFIG.planilhaUrl, null, {
+        params: {
+          imagemBase64: dados.foto,
+          linha: linha,
+          nomeArquivo: `${dados.protocolo || 'foto'}.jpg`,
+          tipoArquivo: 'image/jpeg'
+        }
+      });
+
+      if (!upload.data.success) {
+        console.warn('Erro ao salvar imagem:', upload.data.erro);
+      }
+    }
+
     return response.data.success;
   } catch (error) {
-    console.error('Erro ao enviar para planilha:', error.message);
+    console.error('Erro ao enviar dados ou imagem:', error.message);
     return false;
   }
 }
@@ -96,6 +129,7 @@ client.on('message', async msg => {
   }
 
   sessoes[from].ultimaInteracao = Date.now();
+
   try {
     const etapaAtual = sessoes[from].etapa;
 
@@ -169,8 +203,7 @@ client.on('message', async msg => {
       await enviarMensagem(chat, from, 'Obrigado pelas informações!');
       await enviarMensagem(chat, from, `Seu número de protocolo é: ${sessoes[from].dados.protocolo}`);
       await enviarMensagem(chat, from, 'Sua reclamação será encaminhada para nossa equipe.');
-      await enviarMensagem(chat, from, 'Por favor, avalie nosso atendimento de 1 a 5:');
-      await enviarMensagem(chat, from, '1 - Péssimo | 2 - Ruim | 3 - Regular | 4 - Bom | 5 - Ótimo');
+      await enviarMensagem(chat, from, 'Por favor, avalie nosso atendimento de 1 a 5:\n1 - Péssimo | 2 - Ruim | 3 - Regular | 4 - Bom | 5 - Ótimo');
       return;
     }
 
@@ -181,7 +214,7 @@ client.on('message', async msg => {
       if (salvou) {
         await enviarMensagem(chat, from, '✅ Obrigado pelo seu contato! Seu protocolo foi registrado com sucesso.');
       } else {
-        await enviarMensagem(chat, from, '⚠️ Obrigado pelo seu contato! Sua reclamação foi recebida, mas houve um problema ao registrar o protocolo.');
+        await enviarMensagem(chat, from, '⚠️ Houve um problema ao registrar sua reclamação. Tente novamente mais tarde.');
       }
 
       delete sessoes[from];
