@@ -2,11 +2,14 @@
 const qrcode = require('qrcode-terminal');
 const { Client } = require('whatsapp-web.js');
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 
 const CONFIG = {
   planilhaUrl: 'https://script.google.com/macros/s/AKfycbwVbHUXC1jNCCpFDmzxIgzvbR_BZCdX9fLJC9gF12ov95LjiRYPvNn5-9oDk6MpSwo/exec',
   tempoDigitacao: 1500,
-  tempoResposta: 30000
+  tempoResposta: 30000,
+  diretorioFotos: './fotos' // Local onde as fotos serão salvas
 };
 
 const client = new Client({
@@ -18,6 +21,7 @@ const client = new Client({
 
 const sessoes = {};
 
+// Função para formatar data no fuso horário de Cuiabá
 function formatarDataCuiaba() {
   const agora = new Date();
   const offsetLocal = agora.getTimezoneOffset();
@@ -126,36 +130,17 @@ client.on('message', async msg => {
         const media = await msg.downloadMedia();
         const protocolo = sessoes[from].dados.protocolo;
 
-        let linhaPlanilha = null;
-        try {
-          const res = await axios.get(CONFIG.planilhaUrl, {
-            params: { protocolo }
-          });
-          if (res.data.success) linhaPlanilha = res.data.linha;
-        } catch (e) {
-          console.error("Erro ao localizar linha:", e.message);
+        // Salvar a imagem no sistema de arquivos local
+        const nomeArquivo = `${protocolo}-${Date.now()}.jpg`;
+        const caminhoArquivo = path.join(CONFIG.diretorioFotos, nomeArquivo);
+
+        // Certificar que o diretório existe
+        if (!fs.existsSync(CONFIG.diretorioFotos)) {
+          fs.mkdirSync(CONFIG.diretorioFotos);
         }
 
-        if (!linhaPlanilha) {
-          sessoes[from].dados.foto = 'Erro ao localizar linha';
-        } else {
-          try {
-            const nomeArquivo = `${protocolo}-${Date.now()}.jpg`;
-            const response = await axios.post(CONFIG.planilhaUrl, null, {
-              params: {
-                imagemBase64: media.data,
-                linha: linhaPlanilha,
-                nomeArquivo,
-                tipoArquivo: media.mimetype
-              }
-            });
-
-            sessoes[from].dados.foto = response.data.success ? response.data.link : 'Erro ao salvar imagem';
-          } catch (error) {
-            console.error('Erro ao enviar imagem:', error.message);
-            sessoes[from].dados.foto = 'Erro ao enviar imagem';
-          }
-        }
+        fs.writeFileSync(caminhoArquivo, media.data, 'base64');
+        sessoes[from].dados.foto = caminhoArquivo; // Salva o caminho local da foto
       } else {
         sessoes[from].dados.foto = 'Não enviada';
       }
