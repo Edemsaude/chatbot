@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycbwVbHUXC1jNCCpFDmzxIgzvbR_BZCdX9fLJC9gF12ov95LjiRYPvNn5-9oDk6MpSwo/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbzNqp8mrIKWSrW3KS9aBIGEWk1J2cc4f51WkmdCkHIcgroGzE1qiLZ3AK1s4bVHndUd/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000,
   diretorioFotos: './fotos' // Local onde as fotos serão salvas
@@ -18,7 +18,6 @@ const client = new Client({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   }
 });
-
 const sessoes = {};
 
 // Função para formatar data no fuso horário de Cuiabá
