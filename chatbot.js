@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycbzNqp8mrIKWSrW3KS9aBIGEWk1J2cc4f51WkmdCkHIcgroGzE1qiLZ3AK1s4bVHndUd/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbyjJQZCiwqyWs0w-ZaPXje1s725hcrBTN8K39JXp2hCKt6tpHLarth8lAWovq_3Ublx/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000,
   diretorioFotos: './fotos' // Local onde as fotos serão salvas
