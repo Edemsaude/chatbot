@@ -4,7 +4,7 @@ const axios = require('axios');
 const qs = require('qs');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycbyPUG9pz7HsktZsjpcRdgafjgEQ4IRbW_H6TEuNQsy2HIHeFfMfh6tVTHFWQhwnGfqk8g/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbx2t3Mm9ysJepE2N5TcP7HbVtSLzh4wdlNKkOvac_iPgrqmZUwwu_nJ_bMJkORM2QsX_g/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000,
 };
@@ -35,6 +35,10 @@ function formatarDataCuiaba() {
   return `${dia}/${mes}/${ano} ${horas}:${minutos}:${segundos}`;
 }
 
+function removerCaracteresEspeciais(texto) {
+  return texto.replace(/[^\x00-\x7F]/g, ""); // remove emojis e caracteres fora do padrão ASCII
+}
+
 client.on('qr', qr => qrcode.generate(qr, { small: true }));
 
 client.on('ready', () => {
@@ -46,6 +50,9 @@ client.initialize();
 async function enviarParaPlanilha(dados) {
   try {
     dados.data = formatarDataCuiaba();
+    dados.nomeUsuario = removerCaracteresEspeciais(dados.nomeUsuario);
+
+    console.log('Enviando dados para planilha:', dados);
 
     const response = await axios.post(CONFIG.planilhaUrl, qs.stringify({
       action: 'salvar_dados',
@@ -128,7 +135,6 @@ client.on('message', async msg => {
     }
 
     if (etapaAtual === 'aguardando_foto') {
-      // Não salva arquivo, apenas registra se enviou ou não
       if (msg.hasMedia) {
         sessoes[from].dados.foto = 'Imagem enviada';
       } else {
