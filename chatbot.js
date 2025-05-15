@@ -2,14 +2,11 @@ const qrcode = require('qrcode-terminal');
 const { Client } = require('whatsapp-web.js');
 const axios = require('axios');
 const qs = require('qs');
-const fs = require('fs');
-const path = require('path');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycbyPUG9pz7HsktZsjpcRdgafjgEQ4IRbW_H6TEuNQsy2HIHeFfMfh6tVTHFWQhwnGfqk8g/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbw_J2oiq6NCC5zpDwNaIWc7LZ7mGxQG_3DQL0LjzR-Dpxe5LUN1S1bN_-IFtEVQ_4Lw/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000,
-  diretorioFotos: './fotos'
 };
 
 const client = new Client({
@@ -24,7 +21,7 @@ const sessoes = {};
 function formatarDataCuiaba() {
   const agora = new Date();
   const offsetLocal = agora.getTimezoneOffset();
-  const offsetCuiaba = 240;
+  const offsetCuiaba = 240; // UTC-4h
   const diff = offsetLocal - offsetCuiaba;
   const dataAjustada = new Date(agora.getTime() + diff * 60000);
 
@@ -131,22 +128,11 @@ client.on('message', async msg => {
     }
 
     if (etapaAtual === 'aguardando_foto') {
-      sessoes[from].dados.foto = 'Não enviada';
-
+      // Não salva arquivo, apenas registra se enviou ou não
       if (msg.hasMedia) {
-        const media = await msg.downloadMedia();
-        const protocolo = sessoes[from].dados.protocolo || gerarProtocolo();
-        sessoes[from].dados.protocolo = protocolo;
-
-        if (!fs.existsSync(CONFIG.diretorioFotos)) {
-          fs.mkdirSync(CONFIG.diretorioFotos);
-        }
-
-        const nomeArquivo = `${protocolo}-${Date.now()}.jpg`;
-        const caminhoArquivo = path.join(CONFIG.diretorioFotos, nomeArquivo);
-        fs.writeFileSync(caminhoArquivo, media.data, 'base64');
-
-        sessoes[from].dados.foto = caminhoArquivo;
+        sessoes[from].dados.foto = 'Imagem enviada';
+      } else {
+        sessoes[from].dados.foto = 'Não enviada';
       }
 
       sessoes[from].etapa = 'aguardando_endereco';
