@@ -6,10 +6,10 @@ const fs = require('fs');
 const path = require('path');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycbyjJQZCiwqyWs0w-ZaPXje1s725hcrBTN8K39JXp2hCKt6tpHLarth8lAWovq_3Ublx/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbyPUG9pz7HsktZsjpcRdgafjgEQ4IRbW_H6TEuNQsy2HIHeFfMfh6tVTHFWQhwnGfqk8g/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000,
-  diretorioFotos: './fotos' // Local onde as fotos serão salvas
+  diretorioFotos: './fotos'
 };
 
 const client = new Client({
@@ -18,9 +18,9 @@ const client = new Client({
     args: ['--no-sandbox', '--disable-setuid-sandbox']
   }
 });
+
 const sessoes = {};
 
-// Função para formatar data no fuso horário de Cuiabá
 function formatarDataCuiaba() {
   const agora = new Date();
   const offsetLocal = agora.getTimezoneOffset();
@@ -131,24 +131,24 @@ client.on('message', async msg => {
     }
 
     if (etapaAtual === 'aguardando_foto') {
+      sessoes[from].dados.foto = 'Não enviada';
+
       if (msg.hasMedia) {
         const media = await msg.downloadMedia();
-        const protocolo = sessoes[from].dados.protocolo;
+        const protocolo = sessoes[from].dados.protocolo || gerarProtocolo();
+        sessoes[from].dados.protocolo = protocolo;
 
-        // Salvar a imagem no sistema de arquivos local
-        const nomeArquivo = `${protocolo}-${Date.now()}.jpg`;
-        const caminhoArquivo = path.join(CONFIG.diretorioFotos, nomeArquivo);
-
-        // Certificar que o diretório existe
         if (!fs.existsSync(CONFIG.diretorioFotos)) {
           fs.mkdirSync(CONFIG.diretorioFotos);
         }
 
+        const nomeArquivo = `${protocolo}-${Date.now()}.jpg`;
+        const caminhoArquivo = path.join(CONFIG.diretorioFotos, nomeArquivo);
         fs.writeFileSync(caminhoArquivo, media.data, 'base64');
-        sessoes[from].dados.foto = caminhoArquivo; // Salva o caminho local da foto
-      } else {
-        sessoes[from].dados.foto = 'Não enviada';
+
+        sessoes[from].dados.foto = caminhoArquivo;
       }
+
       sessoes[from].etapa = 'aguardando_endereco';
       await enviarMensagem(chat, from, 'Obrigado pela informação. Vamos precisar do endereço completo.');
       await enviarMensagem(chat, from, 'Por favor, digite o nome da rua, avenida ou travessa com o número:');
@@ -185,7 +185,7 @@ client.on('message', async msg => {
       }
 
       sessoes[from].dados.telefone = msg.body;
-      sessoes[from].dados.protocolo = gerarProtocolo();
+      sessoes[from].dados.protocolo = sessoes[from].dados.protocolo || gerarProtocolo();
       sessoes[from].etapa = 'aguardando_avaliacao';
 
       await enviarMensagem(chat, from, 'Obrigado pelas informações!');
