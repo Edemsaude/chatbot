@@ -4,7 +4,7 @@ const axios = require('axios');
 const qs = require('qs');
 
 const CONFIG = {
-  planilhaUrl: 'https://script.google.com/macros/s/AKfycbx2t3Mm9ysJepE2N5TcP7HbVtSLzh4wdlNKkOvac_iPgrqmZUwwu_nJ_bMJkORM2QsX_g/exec',
+  planilhaUrl: 'https://script.google.com/macros/s/AKfycbyPUG9pz7HsktZsjpcRdgafjgEQ4IRbW_H6TEuNQsy2HIHeFfMfh6tVTHFWQhwnGfqk8g/exec',
   tempoDigitacao: 1500,
   tempoResposta: 30000,
 };
