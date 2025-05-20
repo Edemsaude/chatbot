@@ -21,7 +21,7 @@ const sessoes = {};
 function formatarDataCuiaba() {
   const agora = new Date();
   const offsetLocal = agora.getTimezoneOffset();
-  const offsetCuiaba = 240; // UTC-4h
+  const offsetCuiaba = 240;
   const diff = offsetLocal - offsetCuiaba;
   const dataAjustada = new Date(agora.getTime() + diff * 60000);
 
@@ -36,7 +36,7 @@ function formatarDataCuiaba() {
 }
 
 function removerCaracteresEspeciais(texto) {
-  return texto.replace(/[^\x00-\x7F]/g, ""); // remove emojis e caracteres fora do padrão ASCII
+  return texto.replace(/[^\x00-\x7F]/g, "");
 }
 
 client.on('qr', qr => qrcode.generate(qr, { small: true }));
@@ -135,12 +135,7 @@ client.on('message', async msg => {
     }
 
     if (etapaAtual === 'aguardando_foto') {
-      if (msg.hasMedia) {
-        sessoes[from].dados.foto = 'Imagem enviada';
-      } else {
-        sessoes[from].dados.foto = 'Não enviada';
-      }
-
+      sessoes[from].dados.foto = msg.hasMedia ? 'Imagem enviada' : 'Não enviada';
       sessoes[from].etapa = 'aguardando_endereco';
       await enviarMensagem(chat, from, 'Obrigado pela informação. Vamos precisar do endereço completo.');
       await enviarMensagem(chat, from, 'Por favor, digite o nome da rua, avenida ou travessa com o número:');
@@ -193,7 +188,8 @@ client.on('message', async msg => {
       const salvou = await enviarParaPlanilha(sessoes[from].dados);
 
       if (salvou) {
-        await enviarMensagem(chat, from, '✅ Obrigado pelo seu contato! Seu protocolo foi registrado com sucesso.');
+        await enviarMensagem(chat, from, '✅ Obrigado pelo seu contato! Sua reclamação foi registrada com sucesso. Acompanhe pelo link abaixo as tratativas.');
+        await enviarMensagem(chat, from, '🔗 https://edemsaude.github.io/Protocolo/');
       } else {
         await enviarMensagem(chat, from, '⚠️ Obrigado pelo seu contato! Sua reclamação foi recebida, mas houve um problema ao registrar o protocolo.');
       }
