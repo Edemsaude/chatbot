@@ -130,7 +130,7 @@ client.on('message', async msg => {
       sessoes[from].dados.descricao = msg.body;
       sessoes[from].etapa = 'aguardando_foto';
       await enviarMensagem(chat, from, 'Tem alguma foto que gostaria de nos enviar?');
-      await enviarMensagem(chat, from, '(Se não tiver, apenas envie uma mensagem em branco para continuar)');
+      await enviarMensagem(chat, from, '(Se não tiver, apenas digite não para continuar)');
       return;
     }
 
